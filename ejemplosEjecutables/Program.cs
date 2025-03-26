@@ -2,74 +2,67 @@
 using System;
 using System.Threading;
 
-class MonitorExamplesApp
+class Program
 {
     static void Main()
     {
-        Console.WriteLine("----------Ejemplo 1: Sección crítica----------");
-        Console.WriteLine(SeccionCritica.Mensaje());
-        Console.WriteLine();
+        Console.WriteLine("🧪 Ejecutando ejemplos de Monitor en C#...");
 
-        Console.WriteLine("----------Ejemplo 2: Contador seguro----------");
-        int contador = 0;
-        contador = ContadorSeguro.Incrementar(contador);
-        Console.WriteLine("Contador = " + contador);
-        Console.WriteLine();
+        Console.WriteLine("----------Ejemplo 1----------");
+        new Thread(MonitorExamples.SeccionCritica).Start();
+        Thread.Sleep(300);
 
-        Console.WriteLine("----------Ejemplo 3: TryEnter con timeout----------");
-        Console.WriteLine(IntentoConTimeout.Intentar());
-        Console.WriteLine();
+        Console.WriteLine("----------Ejemplo 2----------");
+        new Thread(MonitorExamples.IntentarConTimeout).Start();
+        Thread.Sleep(300);
 
-        Console.WriteLine("----------Ejemplo 4: Contador compartido----------");
-        for (int i = 0; i < 1000; i++) new Thread(ContadorCompartido.Incrementar).Start();
+        Console.WriteLine("----------Ejemplo 3----------");
+        new Thread(() => MonitorExamples.Productor(42)).Start();
+        Thread.Sleep(100);
+        new Thread(MonitorExamples.Consumidor).Start();
         Thread.Sleep(500);
-        Console.WriteLine("Contador total: " + ContadorCompartido.Obtener());
-        Console.WriteLine();
 
-        Console.WriteLine("----------Ejemplo 5: Lista compartida----------");
-        ListaCompartida.Agregar("Hola");
-        ListaCompartida.Agregar("Monitor");
-        Console.WriteLine("Mensajes: " + ListaCompartida.ObtenerMensajes());
-        Console.WriteLine();
-
-        Console.WriteLine("----------Ejemplo 6: Cuenta bancaria----------");
-        Console.WriteLine(CuentaBancaria.Retirar(200));
-        Console.WriteLine();
-
-        Console.WriteLine("----------Ejemplo 7: Recursos anidados----------");
-        Console.WriteLine(RecursosAnidados.Transferir());
-        Console.WriteLine();
-
-        Console.WriteLine("----------Ejemplo 8: Espera condicional----------");
-        Thread t1 = new Thread(() =>
-        {
-            Console.WriteLine("Esperar(): " + SincronizacionCondicional.Esperar());
-        });
-        t1.Start();
-
+        Console.WriteLine("----------Ejemplo 4----------");
+        new Thread(MonitorExamples.Transferencia).Start();
         Thread.Sleep(500);
-        Console.WriteLine("Señalar(): " + SincronizacionCondicional.Señalar());
-        t1.Join();
-        Console.WriteLine();
 
-        Console.WriteLine("----------Ejemplo 9: Productor/Consumidor----------");
-        Thread t2 = new Thread(() =>
-        {
-            Console.WriteLine("Consumidor: " + ProductorConsumidor.Consumir());
-        });
-        t2.Start();
-
+        Console.WriteLine("----------Ejemplo 5----------");
+        new Thread(MonitorExamples.Esperar).Start();
+        Thread.Sleep(300);
+        new Thread(MonitorExamples.Señalar).Start();
         Thread.Sleep(500);
-        Console.WriteLine("Productor: " + ProductorConsumidor.Producir(123));
-        t2.Join();
-        Console.WriteLine();
 
-        Console.WriteLine("----------Ejemplo 10: Control de stock----------");
-        for (int i = 1; i <= 7; i++)
+        Console.WriteLine("----------Ejemplo 6----------");
+        for (int i = 0; i < 5; i++)
         {
-            string usuario = $"Usuario{i}";
-            Console.WriteLine(ControlDeStock.Comprar(usuario));
+            string user = $"User{i}";
+            new Thread(() => MonitorExamples.AccesoLimitado(user)).Start();
         }
-        Console.WriteLine();
+        Thread.Sleep(2000);
+
+        Console.WriteLine("----------Ejemplo 7----------");
+        new Thread(MonitorExamples.HiloA).Start();
+        Thread.Sleep(100);
+        new Thread(MonitorExamples.HiloB).Start();
+        Thread.Sleep(500);
+
+        Console.WriteLine("----------Ejemplo 8----------");
+        for (int i = 0; i < 3; i++)
+        {
+            string h = $"Hilo{i}";
+            new Thread(() => MonitorExamples.Buscar(h)).Start();
+        }
+        Thread.Sleep(1000);
+
+        Console.WriteLine("----------Ejemplo 9----------");
+        for (int i = 0; i < 5; i++)
+            new Thread(MonitorExamples.Contar).Start();
+        Thread.Sleep(500);
+
+        Console.WriteLine("----------Ejemplo 10----------");
+        new Thread(() => MonitorExamples.AccederConTimeout("HiloX")).Start();
+
+        Thread.Sleep(1000);
+        Console.WriteLine("✅ Fin de los ejemplos.");
     }
 }

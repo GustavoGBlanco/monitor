@@ -1,20 +1,20 @@
-# Ejemplos de `Monitor` en C# (detalle por ejemplo)
+# Ejemplos prácticos y profesionales de `Monitor` en C#
 
-Este documento explica en profundidad cada uno de los 10 ejemplos de uso de `Monitor` en C#, incluyendo su propósito, ejecución y por qué `Monitor` es la mejor opción para ese caso. Todos los ejemplos fueron organizados y adaptados para poder ejecutarse fácilmente en un entorno multihilo.
+Este documento presenta 10 ejemplos realistas y técnicamente justificados del uso de `Monitor` en C#, todos diseñados con hilos (`Thread`) para ilustrar cómo `Monitor` permite un control fino sobre la sincronización, incluyendo `Enter`, `Exit`, `TryEnter`, `Wait` y `Pulse`.
 
 ---
 
-## 🧪 Ejemplo 1: Uso básico de Monitor.Enter/Exit
+## 🧪 Ejemplo 1: Sección crítica con `Monitor.Enter` y `Exit`
 
 ```csharp
-private static object _lock = new();
+private static readonly object _lock = new();
 
-public static string Mensaje()
+public static void SeccionCritica()
 {
     Monitor.Enter(_lock);
     try
     {
-        return "Sección crítica ejecutada con Monitor.Enter/Exit";
+        Console.WriteLine("Ejecutando sección crítica con Monitor.");
     }
     finally
     {
@@ -23,298 +23,334 @@ public static string Mensaje()
 }
 ```
 
-🔍 Marca la forma básica de sincronización usando `Monitor`.
+🔍 Uso básico de `Monitor` para proteger una sección crítica.
 
 ✅ **¿Por qué `Monitor`?**  
-Permite control explícito de adquisición y liberación de locks.
+Proporciona control explícito sobre la entrada y salida del lock. Útil cuando se necesita flexibilidad adicional.
+
+📊 **Comparación con otros mecanismos:**
+- 🔐 `lock`: más conciso, pero menos flexible.
+- 🧵 `Mutex`: innecesario para sincronización dentro del mismo proceso.
+- 🔄 `Barrier`: no aplica, no hay fases de sincronización.
+- 📉 `Semaphore(Slim)`: más útil para acceso concurrente parcial.
 
 ---
 
-## 🧪 Ejemplo 2: Uso con try/finally seguro
+## 🧪 Ejemplo 2: Uso de `Monitor.TryEnter` con timeout
 
 ```csharp
-private static object _lock = new();
+private static readonly object _lock = new();
 
-public static int Incrementar(int contador)
+public static void IntentarConTimeout()
 {
-    Monitor.Enter(_lock);
-    try
+    if (Monitor.TryEnter(_lock, TimeSpan.FromMilliseconds(300)))
     {
-        contador++;
-        return contador;
-    }
-    finally
-    {
-        Monitor.Exit(_lock);
-    }
-}
-```
-
-🔍 Incrementa una variable en forma segura.
-
-✅ **¿Por qué `Monitor`?**  
-Ideal para flujos donde la liberación debe ser garantizada manualmente.
-
----
-
-## 🧪 Ejemplo 3: TryEnter con timeout
-
-```csharp
-private static object _lock = new();
-
-public static string Intentar()
-{
-    if (Monitor.TryEnter(_lock, TimeSpan.FromMilliseconds(500)))
-    {
-        try { return "Entró a la sección crítica"; }
-        finally { Monitor.Exit(_lock); }
+        try
+        {
+            Console.WriteLine("Acceso concedido.");
+        }
+        finally
+        {
+            Monitor.Exit(_lock);
+        }
     }
     else
     {
-        return "Timeout: no se pudo entrar";
+        Console.WriteLine("Timeout: no se pudo obtener el lock.");
     }
 }
 ```
 
-🔍 Intenta entrar a la sección crítica sin bloquear indefinidamente.
+🔍 Permite evitar bloqueos indefinidos.
 
 ✅ **¿Por qué `Monitor`?**  
-Ofrece `TryEnter`, lo cual `lock` no tiene.
+`TryEnter` permite controlar cuánto tiempo se espera. `lock` no lo permite.
+
+📊 **Comparación con otros mecanismos:**
+- 🔐 `lock`: no permite timeout.
+- 🧵 `Mutex`: también permite timeout, pero más costoso.
+- 🔄 `Barrier`: no aplica.
+- 📉 `Semaphore(Slim)`: buena alternativa si hay concurrencia permitida.
 
 ---
 
-## 🧪 Ejemplo 4: Protección de contador compartido
+## 🧪 Ejemplo 3: Productor-consumidor con `Monitor.Wait` y `Pulse`
 
 ```csharp
-private static object _lock = new();
-private static int _contador = 0;
-
-public static void Incrementar()
-{
-    Monitor.Enter(_lock);
-    try { _contador++; }
-    finally { Monitor.Exit(_lock); }
-}
-
-public static int Obtener()
-{
-    Monitor.Enter(_lock);
-    try { return _contador; }
-    finally { Monitor.Exit(_lock); }
-}
-```
-
-🔍 Incrementa y expone el contador protegido.
-
-✅ **¿Por qué `Monitor`?**  
-Más flexible para código donde se requiera lógica adicional.
-
----
-
-## 🧪 Ejemplo 5: Acceso a lista compartida
-
-```csharp
-private static object _lock = new();
-private static List<string> _mensajes = new();
-
-public static void Agregar(string mensaje)
-{
-    Monitor.Enter(_lock);
-    try { _mensajes.Add(mensaje); }
-    finally { Monitor.Exit(_lock); }
-}
-
-public static string ObtenerMensajes()
-{
-    Monitor.Enter(_lock);
-    try { return string.Join(", ", _mensajes); }
-    finally { Monitor.Exit(_lock); }
-}
-```
-
-🔍 Permite observar el contenido de una lista protegida.
-
-✅ **¿Por qué `Monitor`?**  
-Flexible, ideal para estructuras más complejas.
-
----
-
-## 🧪 Ejemplo 6: Lógica condicional protegida
-
-```csharp
-private static object _lock = new();
-private static int _saldo = 1000;
-
-public static string Retirar(int monto)
-{
-    Monitor.Enter(_lock);
-    try
-    {
-        if (_saldo >= monto)
-        {
-            _saldo -= monto;
-            return $"Retirado {monto}. Saldo restante: {_saldo}";
-        }
-        else
-        {
-            return "Fondos insuficientes";
-        }
-    }
-    finally
-    {
-        Monitor.Exit(_lock);
-    }
-}
-```
-
-🔍 Ejecuta lógica bajo condiciones sincronizadas.
-
-✅ **¿Por qué `Monitor`?**  
-Permite controlar bloques más complejos y reusables.
-
----
-
-## 🧪 Ejemplo 7: Locks anidados con Monitor
-
-```csharp
-private static object _lockA = new();
-private static object _lockB = new();
-
-public static string Transferir()
-{
-    Monitor.Enter(_lockA);
-    try
-    {
-        Monitor.Enter(_lockB);
-        try { return "Transferencia completada con éxito"; }
-        finally { Monitor.Exit(_lockB); }
-    }
-    finally
-    {
-        Monitor.Exit(_lockA);
-    }
-}
-```
-
-🔍 Asegura operaciones compuestas.
-
-✅ **¿Por qué `Monitor`?**  
-Ideal cuando se deben adquirir múltiples recursos en orden.
-
----
-
-## 🧪 Ejemplo 8: Wait y Pulse
-
-```csharp
-private static object _lock = new();
-private static bool _listo = false;
-
-public static string Esperar()
-{
-    Monitor.Enter(_lock);
-    try
-    {
-        while (!_listo)
-        {
-            Monitor.Wait(_lock);
-        }
-        return "Continuando luego de señal";
-    }
-    finally
-    {
-        Monitor.Exit(_lock);
-    }
-}
-
-public static string Señalar()
-{
-    Monitor.Enter(_lock);
-    try
-    {
-        _listo = true;
-        Monitor.Pulse(_lock);
-        return "Señal enviado correctamente";
-    }
-    finally
-    {
-        Monitor.Exit(_lock);
-    }
-}
-```
-
-🔍 Muestra sincronización por condiciones.
-
-✅ **¿Por qué `Monitor`?**  
-Único mecanismo que soporta `Wait` y `Pulse`.
-
----
-
-## 🧪 Ejemplo 9: Productor-consumidor simple
-
-```csharp
-private static object _lock = new();
+private static readonly object _lock = new();
 private static Queue<int> _cola = new();
 
-public static string Producir(int valor)
-{
-    Monitor.Enter(_lock);
-    try
-    {
-        _cola.Enqueue(valor);
-        Monitor.Pulse(_lock);
-        return $"Producido: {valor}";
-    }
-    finally
-    {
-        Monitor.Exit(_lock);
-    }
-}
-
-public static string Consumir()
+public static void Consumidor()
 {
     Monitor.Enter(_lock);
     try
     {
         while (_cola.Count == 0)
         {
+            Console.WriteLine("Consumidor esperando...");
             Monitor.Wait(_lock);
         }
-        int val = _cola.Dequeue();
-        return $"Consumido: {val}";
+
+        int valor = _cola.Dequeue();
+        Console.WriteLine($"Consumido: {valor}");
     }
     finally
     {
         Monitor.Exit(_lock);
     }
 }
-```
 
-🔍 Establece flujo entre productor y consumidor.
-
-✅ **¿Por qué `Monitor`?**  
-Permite coordinar sin necesidad de estructuras externas.
-
----
-
-## 🧪 Ejemplo 10: Control de stock con condición
-
-```csharp
-private static object _lock = new();
-private static int _stock = 5;
-
-public static string Comprar(string usuario)
+public static void Productor(int valor)
 {
     Monitor.Enter(_lock);
     try
     {
-        if (_stock > 0)
+        _cola.Enqueue(valor);
+        Console.WriteLine($"Producido: {valor}");
+        Monitor.Pulse(_lock);
+    }
+    finally
+    {
+        Monitor.Exit(_lock);
+    }
+}
+```
+
+🔍 Coordina hilos que esperan y notifican con una cola compartida.
+
+✅ **¿Por qué `Monitor`?**  
+Es el único mecanismo en C# con `Wait`/`Pulse`.
+
+📊 **Comparación con otros mecanismos:**
+- 🔐 `lock`: no soporta `Wait` ni `Pulse`.
+- 🧵 `Mutex`: no tiene notificación.
+- 🔄 `Barrier`: no adecuado para este patrón.
+- 📉 `Semaphore(Slim)`: puede modelar esto, pero no con notificación por condiciones.
+
+---
+
+## 🧪 Ejemplo 4: Transferencia entre recursos sincronizados
+
+```csharp
+private static readonly object _lock1 = new();
+private static readonly object _lock2 = new();
+
+public static void Transferencia()
+{
+    Monitor.Enter(_lock1);
+    try
+    {
+        Thread.Sleep(100); // Simula trabajo previo
+        Monitor.Enter(_lock2);
+        try
         {
-            _stock--;
-            return $"{usuario} compró. Stock restante: {_stock}";
+            Console.WriteLine("Transferencia realizada con ambos recursos.");
         }
-        else
+        finally
         {
-            return $"{usuario} no pudo comprar. Sin stock.";
+            Monitor.Exit(_lock2);
+        }
+    }
+    finally
+    {
+        Monitor.Exit(_lock1);
+    }
+}
+```
+
+🔍 Requiere adquirir dos recursos protegidos al mismo tiempo.
+
+✅ **¿Por qué `Monitor`?**  
+Permite realizar control manual de adquisición de múltiples locks.
+
+📊 **Comparación con otros mecanismos:**
+- 🔐 `lock`: más limpio, pero menos flexible.
+- 🧵 `Mutex`: igual, pero interprocesos.
+- 🔄 `Barrier`: no aplica.
+- 📉 `Semaphore(Slim)`: no gestiona orden ni composición de locks.
+
+---
+
+## 🧪 Ejemplo 5: Espera condicional (habilitar cuando listo)
+
+```csharp
+private static readonly object _lock = new();
+private static bool _listo = false;
+
+public static void Esperar()
+{
+    Monitor.Enter(_lock);
+    try
+    {
+        while (!_listo)
+        {
+            Console.WriteLine("Esperando señal...");
+            Monitor.Wait(_lock);
+        }
+        Console.WriteLine("¡Listo para continuar!");
+    }
+    finally
+    {
+        Monitor.Exit(_lock);
+    }
+}
+
+public static void Señalar()
+{
+    Monitor.Enter(_lock);
+    try
+    {
+        _listo = true;
+        Monitor.PulseAll(_lock);
+    }
+    finally
+    {
+        Monitor.Exit(_lock);
+    }
+}
+```
+
+🔍 Permite iniciar ejecución solo cuando una condición se activa.
+
+✅ **¿Por qué `Monitor`?**  
+Permite bloquear y despertar múltiples hilos por estado compartido.
+
+📊 **Comparación con otros mecanismos:**
+- 🔐 `lock`: no puede esperar condicionalmente.
+- 🧵 `AutoResetEvent`, `ManualResetEvent`: alternativa viable si se requiere más control externo.
+- 🔄 `Barrier`: sincronización por fases, no por condición.
+- 📉 `Semaphore(Slim)`: no maneja condiciones de espera internas.
+
+---
+
+## 🧪 Ejemplo 6: Límite de acceso con contador (tipo semáforo)
+
+```csharp
+private static readonly object _lock = new();
+private static int _enUso = 0;
+private static readonly int _max = 3;
+
+public static void AccesoLimitado(string usuario)
+{
+    Monitor.Enter(_lock);
+    try
+    {
+        while (_enUso >= _max)
+        {
+            Console.WriteLine($"{usuario} esperando turno...");
+            Monitor.Wait(_lock);
+        }
+        _enUso++;
+    }
+    finally
+    {
+        Monitor.Exit(_lock);
+    }
+
+    Console.WriteLine($"{usuario} accediendo al recurso.");
+    Thread.Sleep(500);
+
+    Monitor.Enter(_lock);
+    try
+    {
+        _enUso--;
+        Monitor.Pulse(_lock);
+    }
+    finally
+    {
+        Monitor.Exit(_lock);
+    }
+}
+```
+
+🔍 Controla cuántos hilos pueden entrar simultáneamente a una sección.
+
+✅ **¿Por qué `Monitor`?**  
+Permite una implementación tipo semáforo personalizada con lógica propia.
+
+📊 **Comparación con otros mecanismos:**
+- 📉 `SemaphoreSlim`: más directo, pero menos flexible si hay lógica adicional.
+- 🔐 `lock`: no se puede usar para contar o esperar por condiciones.
+- 🔄 `Barrier`: no adecuado aquí.
+
+---
+
+## 🧪 Ejemplo 7: Coordinación alterna entre hilos (ping-pong)
+
+```csharp
+private static readonly object _lock = new();
+private static bool _turnoA = true;
+
+public static void HiloA()
+{
+    Monitor.Enter(_lock);
+    try
+    {
+        while (!_turnoA) Monitor.Wait(_lock);
+        Console.WriteLine("Hilo A ejecutando...");
+        _turnoA = false;
+        Monitor.Pulse(_lock);
+    }
+    finally
+    {
+        Monitor.Exit(_lock);
+    }
+}
+
+public static void HiloB()
+{
+    Monitor.Enter(_lock);
+    try
+    {
+        while (_turnoA) Monitor.Wait(_lock);
+        Console.WriteLine("Hilo B ejecutando...");
+        _turnoA = true;
+        Monitor.Pulse(_lock);
+    }
+    finally
+    {
+        Monitor.Exit(_lock);
+    }
+}
+```
+
+🔍 Controla el orden entre hilos.
+
+✅ **¿Por qué `Monitor`?**  
+Ideal para controlar turnos entre hilos. `lock` no permite esto.
+
+📊 **Comparación con otros mecanismos:**
+- 🔐 `lock`: no se puede usar para contar o esperar por condiciones.
+- 🧵 `Mutex`: no soporta notificación entre hilos (como Pulse), solo bloqueo.
+- 📉 `SemaphoreSlim`: permitiría limitar acceso, pero no gestionar turnos ni alternancia.
+- 🔄 `Barrier`: no aplica, ya que no hay fases sincronizadas entre hilos.
+
+---
+
+## 🧪 Ejemplo 8: Búsqueda en paralelo con cancelación
+
+```csharp
+private static readonly object _lock = new();
+private static bool _encontrado = false;
+
+public static void Buscar(string hilo)
+{
+    Monitor.Enter(_lock);
+    try
+    {
+        if (_encontrado)
+        {
+            Console.WriteLine($"{hilo} aborta búsqueda.");
+            return;
+        }
+
+        Console.WriteLine($"{hilo} buscando...");
+        Thread.Sleep(200);
+
+        if (!_encontrado)
+        {
+            _encontrado = true;
+            Console.WriteLine($"{hilo} encontró el resultado.");
         }
     }
     finally
@@ -324,9 +360,89 @@ public static string Comprar(string usuario)
 }
 ```
 
-🔍 Controla acceso a recurso limitado en contexto concurrente.
+🔍 Solo un hilo completa una tarea; los otros salen.
 
 ✅ **¿Por qué `Monitor`?**  
-Ideal para lógica crítica con condiciones.
+Permite lógica condicional con salida segura de hilos.
+
+📊 **Comparación con otros mecanismos:**
+- 🔐 `lock`: permitiría exclusión mutua, pero no controlar múltiples condiciones como "ya encontrado".
+- 🧵 `Mutex`: más costoso y sin beneficios en un entorno de un solo proceso.
+- 🔄 `Barrier`: no aplica, no hay fases compartidas.
+- 📉 `Semaphore(Slim)`: no resuelve cancelación basada en lógica compartida.
+
+---
+
+## 🧪 Ejemplo 9: Contador extendido con condición personalizada
+
+```csharp
+private static readonly object _lock = new();
+private static int _contador = 0;
+
+public static void Contar()
+{
+    Monitor.Enter(_lock);
+    try
+    {
+        _contador++;
+        if (_contador % 3 == 0)
+            Console.WriteLine($"Contador alcanzó múltiplo de 3: {_contador}");
+    }
+    finally
+    {
+        Monitor.Exit(_lock);
+    }
+}
+```
+
+🔍 Se puede extender con reglas de negocio más complejas.
+
+✅ **¿Por qué `Monitor`?**  
+`Interlocked` no permite lógica extendida. `lock` sería equivalente, pero `Monitor` es útil si más adelante se quiere integrar `Wait/Pulse`.
+
+📊 **Comparación con otros mecanismos:**
+- 🔐 `lock`: funcionaría igual para este caso si solo incrementamos, pero no es extensible si luego se requiere Wait/Pulse.
+- 🧵 `Mutex`: no aporta valor agregado, siendo más costoso.
+- 🔄 `Barrier`: no aplica en absoluto, ya que no hay sincronización por barrera ni fases.
+- 📉 `Semaphore(Slim)`: útil si quisiéramos limitar acceso concurrente, pero aquí el acceso es exclusivo.
+
+---
+
+## 🧪 Ejemplo 10: Acceso exclusivo con timeout simulado
+
+```csharp
+private static readonly object _lock = new();
+
+public static void AccederConTimeout(string nombre)
+{
+    if (Monitor.TryEnter(_lock, 300))
+    {
+        try
+        {
+            Console.WriteLine($"{nombre} accedió al recurso.");
+            Thread.Sleep(500);
+        }
+        finally
+        {
+            Monitor.Exit(_lock);
+        }
+    }
+    else
+    {
+        Console.WriteLine($"{nombre} no pudo acceder (timeout).");
+    }
+}
+```
+
+🔍 Simula un recurso costoso al que se intenta acceder con tiempo limitado.
+
+✅ **¿Por qué `Monitor`?**  
+Proporciona control total sobre el acceso a la sección crítica.
+
+📊 **Comparación con otros mecanismos:**
+- 🔐 `lock`: no soporta timeout, por lo que el hilo se bloquearía indefinidamente.
+- 🧵 `Mutex`: alternativa válida si se requiere sincronización entre procesos, pero más lento.
+- 🔄 `Barrier`: no corresponde en este patrón.
+- 📉 `Semaphore(Slim)`: puede ser usado con timeout, pero permite múltiples accesos. Monitor es mejor si se necesita exclusión total y control explícito.
 
 ---
