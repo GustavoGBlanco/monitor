@@ -119,5 +119,3 @@ Este mecanismo es vital para **coordinar hilos que dependen entre sí**.
 | Mantené el diseño simple | Evitá deadlocks y código confuso |
 
 ---
-
-✅ Este fue el Módulo 2. En el siguiente veremos `Mutex` con un ejemplo entre procesos o hilos.
