@@ -1,0 +1,57 @@
+# Build outputs
+bin/
+obj/
+out/
+
+# User-specific files
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+
+# VS Code settings
+.vscode/
+*.code-workspace
+
+# ASP.NET specific
+appsettings.Development.json
+
+# Logs
+*.log
+
+# OS-specific
+.DS_Store
+Thumbs.db
+
+# Dotnet CLI
+.project/
+.idea/
+*.dbmdl
+*.jfm
+
+# Rider
+.idea/
+*.sln.iml
+
+# Visual Studio Code
+.history/
+
+# Paket dependency manager
+.paket/
+paket-files/
+
+# Temporary files
+~$*
+*.tmp
+
+# JetBrains Rider
+.ReSharper*/
+
+# Coverage / testing
+coverage/
+TestResults/
+*.coverage
+*.coveragexml
+
+# Ignore generated file if exists
+log.txt

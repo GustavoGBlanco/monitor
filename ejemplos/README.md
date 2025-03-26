@@ -9,7 +9,7 @@ Este documento explica en profundidad cada uno de los 10 ejemplos de uso de `Mon
 ```csharp
 private static object _lock = new();
 
-public static string Metodo()
+public static string Mensaje()
 {
     Monitor.Enter(_lock);
     try
@@ -62,7 +62,7 @@ Ideal para flujos donde la liberación debe ser garantizada manualmente.
 ```csharp
 private static object _lock = new();
 
-public static string IntentarEntrar()
+public static string Intentar()
 {
     if (Monitor.TryEnter(_lock, TimeSpan.FromMilliseconds(500)))
     {
@@ -96,7 +96,7 @@ public static void Incrementar()
     finally { Monitor.Exit(_lock); }
 }
 
-public static int GetContador()
+public static int Obtener()
 {
     Monitor.Enter(_lock);
     try { return _contador; }
@@ -124,7 +124,7 @@ public static void Agregar(string mensaje)
     finally { Monitor.Exit(_lock); }
 }
 
-public static string ImprimirMensajes()
+public static string ObtenerMensajes()
 {
     Monitor.Enter(_lock);
     try { return string.Join(", ", _mensajes); }
